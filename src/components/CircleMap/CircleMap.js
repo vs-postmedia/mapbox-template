@@ -34,7 +34,6 @@ export class CircleMap extends Component {
 		mapboxgl.accessToken = this.props.config.accessToken;
 		
 		this.map = new mapboxgl.Map({
-			// container: this.props.container,
 			container: this.mapContainer,
 			style: this.props.mapboxStyle,
 			center: [this.props.center[1], this.props.center[0]],
@@ -50,7 +49,7 @@ export class CircleMap extends Component {
 	componentDidUpdate(prevProps) {
 		if (this.state.mapIsLoaded) {
 			if (this.props.data !== prevProps.data) {
-			    this.map.getSource('wildfires').setData(this.props.data);
+			    this.map.getSource(this.props.mapDataSource).setData(this.props.data);
 			}
 		} else {
 			this.renderMap(this.props.data);
@@ -62,7 +61,7 @@ export class CircleMap extends Component {
 		let fire_size = [];
 
 		data.forEach(d => {
-			fire_size.push(parseFloat(d.properties.CURRENT_SI));
+			fire_size.push(parseFloat(d.properties[this.props.circleSizeMetric]));
 		});
 		return [Math.min(...fire_size), Math.max(...fire_size)];
 	}
@@ -85,13 +84,13 @@ export class CircleMap extends Component {
 
 		// calculate circle size
 		data.features.forEach((d,i) => {
-			const radius = this.mapRange(this.extent, this.range, d.properties.CURRENT_SI);
+			const radius = this.mapRange(this.extent, this.range, d.properties[this.props.circleSizeMetric]);
 			d.properties.radius = Math.log(radius) * 4;
 		});
 
 		// reorder array by CURRENT_SI, largest -> smallest
 		data.features.sort((a,b) => {
-			return b.CURRENT_SI - a.CURRENT_SI;
+			return b[this.props.circleSizeMetric] - a[this.props.circleSizeMetric];
 		});
 	}
 
@@ -122,25 +121,11 @@ export class CircleMap extends Component {
 			});
 
 			this.map.addLayer({
-				id: 'wildfires',
+				id: 'data-layer',
 				type: 'circle',
-				source: 'wildfires',
+				source: this.props.mapDataSource,
 				paint: {
-					'circle-color': [
-						'match',
-						['get', 'FIRE_STATU'],
-						'New',
-						'#DD2D25',
-						'Out of Control',
-						'#DD2D25',
-						'Being Held',
-						'#F26B21',
-						'Under Control',
-						'#0062A3',
-						'Out',
-						'#6D6E70',
-						/* other */ '#F6B31C'
-					],
+					'circle-color': this.props.circleColours,
 					'circle-opacity': 0.7,
 					// probably a better way to do this...
 					'circle-radius': [
