@@ -1,18 +1,36 @@
+import Axios from 'axios';
 import React, { Component, Fragment } from 'react';
 import CircleMap from '../CircleMap/CircleMap';
 import './MapboxMap.css';
 
 
-let zoom = window.innerWidth > 400 ? 5 : 4;
-let center = window.innerWidth > 400 ? [51.184179, -121.752423] : [52.184179, -121.752423];
 
 export class MapBoxMap extends Component {
-	map_options = {
-		center: center,
-		classField: 'FIRE_STATU',
-		maxZoom: 8,
-		minZoom: 3,
-		zoom: zoom
+	constructor(props) {
+		super(props);
+		this.state = {
+			data_all: [],
+			data_display: []
+		}
+	}	
+
+	componentDidMount() {
+		Axios.get(this.props.data)
+			.then(resp => {
+				// process data here...
+				const mapData = {
+					type: 'FeatureCollection',
+					features: resp.data.features
+				};
+
+				console.log(mapData);
+
+				// update our state with the new data
+				this.setState({
+					data_all: resp.data,
+					data_display: mapData,
+				});
+			});
 	}
 
 	render() {
@@ -21,15 +39,16 @@ export class MapBoxMap extends Component {
 				<h1>Mapbox Map</h1>
 
 				<CircleMap
-					center={this.map_options.center}
-					circleMarkerClassField={this.map_options.classField}
-					config={this.props.config}
+					center={this.props.mapOptions.center}
+					circleMarkerClassField={this.props.mapOptions.classField}
+					config={this.props.mapboxConfig}
 					container="mapview"
-					data={this.props.data}
+					data={this.state.data_display}
+					data_all={this.state.data_all}
 					mapboxStyle={this.props.mapboxStyle}
-					maxZoom={this.map_options.maxZoom}
-					minZoom={this.map_options.minZoom}
-					zoom={this.map_options.zoom}>
+					maxZoom={this.props.mapOptions.maxZoom}
+					minZoom={this.props.mapOptions.minZoom}
+					zoom={this.props.mapOptions.zoom}>
 				</CircleMap>
 			</Fragment>
 		);
